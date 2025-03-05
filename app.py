@@ -4,14 +4,12 @@ import threading
 from flask import Flask, request, jsonify, send_file, render_template
 import yt_dlp
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='build', template_folder='build')
 
-# Function to create directory if it doesn't exist
 def ensure_directory_exists(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-# Function to delete files after 30 minutes
 def delete_after_delay(filepath, delay=1800):  # 1800 seconds = 30 minutes
     time.sleep(delay)
     if os.path.exists(filepath):
@@ -25,10 +23,12 @@ def index():
         if not url:
             return jsonify({"error": "URL is required"}), 400
 
-        # Get available formats
-        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
-            info = ydl.extract_info(url, download=False)
-            formats = [{"format_id": f["format_id"], "ext": f["ext"], "resolution": f.get("resolution", "N/A")} for f in info["formats"]]
+        try:
+            with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+                formats = [{"format_id": f["format_id"], "ext": f["ext"], "resolution": f.get("resolution", "N/A")} for f in info["formats"]]
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
         return jsonify({"formats": formats})
 
@@ -42,22 +42,22 @@ def download_video():
     if not url or not format_id:
         return jsonify({"error": "URL and format_id are required"}), 400
 
-    # Extract directory from URL
     directory = request.url_root.split('/')[-2] if '/' in request.url_root else "downloads"
     download_folder = os.path.join(directory, "downloads")
     ensure_directory_exists(download_folder)
 
-    # Define output file path
     ydl_opts = {
         "format": format_id,
         "outtmpl": os.path.join(download_folder, "%(title)s.%(ext)s"),
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # Schedule deletion after 30 minutes
     threading.Thread(target=delete_after_delay, args=(filename,)).start()
 
     return jsonify({"message": "Download complete", "filename": os.path.basename(filename)})
