@@ -23,40 +23,56 @@
             e.preventDefault();
             let url = document.getElementById("url").value;
             
-            fetch("/", { method: "POST", body: new URLSearchParams({ "url": url }) })
-                .then(response => response.json())
-                .then(data => {
-                    let select = document.getElementById("format-id");
-                    select.innerHTML = "";
-                    data.formats.forEach(format => {
-                        let option = document.createElement("option");
-                        option.value = format.format_id;
-                        option.textContent = `${format.resolution} (${format.ext})`;
-                        select.appendChild(option);
-                    });
-
-                    document.getElementById("download-url").value = url;
-                    document.getElementById("formats").innerHTML = "<p>Select a format:</p>";
-                    document.getElementById("download-form").style.display = "block";
+            fetch(getBasePath() + "/", { 
+                method: "POST", 
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({ "url": url }) 
+            })
+            .then(response => response.json())
+            .then(data => {
+                let select = document.getElementById("format-id");
+                select.innerHTML = "";
+                data.formats.forEach(format => {
+                    let option = document.createElement("option");
+                    option.value = format.format_id;
+                    option.textContent = `${format.resolution} (${format.ext})`;
+                    select.appendChild(option);
                 });
+
+                document.getElementById("download-url").value = url;
+                document.getElementById("formats").innerHTML = "<p>Select a format:</p>";
+                document.getElementById("download-form").style.display = "block";
+            })
+            .catch(error => {
+                console.error("Error fetching formats:", error);
+            });
         });
 
         document.getElementById("download-form").addEventListener("submit", function(e) {
             e.preventDefault();
             let formData = new FormData(this);
 
-            fetch("/download", { method: "POST", body: formData })
+            fetch(getBasePath() + "/download", { method: "POST", body: formData })
                 .then(response => response.json())
                 .then(data => {
                     if (data.filename) {
                         let link = document.createElement("a");
-                        link.href = `/get_file/${data.filename}`;
+                        link.href = getBasePath() + `/get_file/${data.filename}`;
                         link.download = data.filename;
                         link.textContent = "Click here to download";
                         document.body.appendChild(link);
                     }
+                })
+                .catch(error => {
+                    console.error("Error downloading video:", error);
                 });
         });
+
+        function getBasePath() {
+            return window.location.pathname.replace(/\/[^\/]*$/, '');
+        }
     </script>
 </body>
 </html>
