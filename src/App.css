@@ -1,0 +1,32 @@
+.App {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+form {
+    margin: 20px 0;
+}
+
+input[type="text"] {
+    padding: 10px;
+    font-size: 16px;
+    width: 300px;
+    margin-right: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+select {
+    padding: 10px;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.error {
+    color: red;
+    margin: 20px 0;
+}
