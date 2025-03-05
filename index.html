@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Downloader</title>
+</head>
+<body>
+    <h1>YouTube Video Downloader</h1>
+    <form id="fetch-form">
+        <input type="text" name="url" id="url" placeholder="Enter YouTube URL" required>
+        <button type="submit">Get Formats</button>
+    </form>
+
+    <div id="formats"></div>
+
+    <form id="download-form" style="display:none;">
+        <input type="hidden" name="url" id="download-url">
+        <select name="format_id" id="format-id"></select>
+        <button type="submit">Download</button>
+    </form>
+
+    <script>
+        document.getElementById("fetch-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            let url = document.getElementById("url").value;
+            
+            fetch("/", { method: "POST", body: new URLSearchParams({ "url": url }) })
+                .then(response => response.json())
+                .then(data => {
+                    let select = document.getElementById("format-id");
+                    select.innerHTML = "";
+                    data.formats.forEach(format => {
+                        let option = document.createElement("option");
+                        option.value = format.format_id;
+                        option.textContent = `${format.resolution} (${format.ext})`;
+                        select.appendChild(option);
+                    });
+
+                    document.getElementById("download-url").value = url;
+                    document.getElementById("formats").innerHTML = "<p>Select a format:</p>";
+                    document.getElementById("download-form").style.display = "block";
+                });
+        });
+
+        document.getElementById("download-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            let formData = new FormData(this);
+
+            fetch("/download", { method: "POST", body: formData })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.filename) {
+                        let link = document.createElement("a");
+                        link.href = `/get_file/${data.filename}`;
+                        link.download = data.filename;
+                        link.textContent = "Click here to download";
+                        document.body.appendChild(link);
+                    }
+                });
+        });
+    </script>
+</body>
+</html>
